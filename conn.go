@@ -29,6 +29,7 @@ type connection struct {
 //從堆疊出把訊息pump
 func (c *connection) readPump() {
 	defer func() {
+		log.Println(c.ws.RemoteAddr().String(), "disconnect")
 		h.unregister <- c
 		c.ws.Close()
 	}()
