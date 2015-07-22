@@ -4,17 +4,22 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"os"
 )
 
-var addr = flag.String("addr", ":8001", "we service address")
+var addr = flag.String("addr", ":8001", "ws address")
+var logDir = flag.String("logDir", "", "log dir")
 
 func main() {
 	flag.Parse()
+
+	f, err := os.OpenFile(*logDir, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0775)
+	if err == nil {
+		log.SetOutput(f)
+	}
+
 	go h.run()
 	http.HandleFunc("/", serverHandler)
-	err := http.ListenAndServe(*addr, nil)
-	if err != nil {
-		log.Fatal("ListenAndServe:", err)
-	}
+	log.Fatal(http.ListenAndServe(*addr, nil))
 
 }
