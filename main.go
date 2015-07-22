@@ -20,6 +20,7 @@ func main() {
 
 	go h.run()
 	http.HandleFunc("/", serverHandler)
+	log.Println("Server Start", *addr)
 	log.Fatal(http.ListenAndServe(*addr, nil))
 
 }

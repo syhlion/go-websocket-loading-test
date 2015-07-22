@@ -40,6 +40,7 @@ func (c *connection) readPump() {
 		if err != nil {
 			break
 		}
+		log.Println(c.ws.RemoteAddr().String(), "Send", message)
 		h.broadcast <- message
 	}
 }
@@ -79,6 +80,7 @@ func (c *connection) writePump() {
 func serverHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		http.Error(w, "Method not allowed", 405)
+		log.Println(r.RemoteAddr, "Metho no allowed", r.Header)
 		return
 	}
 	ws, err := upgrader.Upgrade(w, r, nil)
@@ -86,6 +88,7 @@ func serverHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
+	log.Println(ws.RemoteAddr().String(), "Connect Scuess")
 	c := &connection{send: make(chan []byte, 256), ws: ws}
 	h.register <- c
 	go c.writePump()
