@@ -84,13 +84,14 @@ func (c *connection) writePump() {
 				return
 			}
 			if err := c.write(websocket.TextMessage, message); err != nil {
-				token := string(message)
-				if token == "pong" {
-					log.Println(c.headerIP, "send pong")
-				} else if token == "broadcast-ping" {
-					log.Println(c.headerIP, "send broadcast-ping")
-				}
 				return
+			}
+
+			token := string(message)
+			if token == "pong" {
+				log.Println(c.headerIP, "send pong")
+			} else if token == "broadcast-ping" {
+				log.Println(c.headerIP, "send broadcast-ping")
 			}
 		case <-ticker.C: //心跳封包
 			if err := c.write(websocket.PingMessage, []byte{}); err != nil {
