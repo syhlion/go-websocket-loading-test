@@ -22,14 +22,19 @@ var upgrader = websocket.Upgrader{
 
 //連線物件
 type connection struct {
-	ws   *websocket.Conn
-	send chan []byte
+	ws       *websocket.Conn
+	send     chan []byte
+	headerIP string
+}
+
+func messagelog(b []byte) {
+
 }
 
 //從堆疊出把訊息pump
 func (c *connection) readPump() {
 	defer func() {
-		log.Println(c.ws.RemoteAddr().String(), "disconnect")
+		log.Println(c.headerIP, "disconnect")
 		h.unregister <- c
 		c.ws.Close()
 	}()
@@ -41,8 +46,19 @@ func (c *connection) readPump() {
 		if err != nil {
 			break
 		}
-		log.Println(c.ws.RemoteAddr().String(), "Send", message)
-		h.broadcast <- message
+		token := string(message)
+		if token == "ping" {
+			log.Println(c.headerIP, "receive", token)
+			c.send <- []byte("pong")
+		} else if token == "broadcast-pong" {
+			log.Println(c.headerIP, "recieve", token)
+		} else if token == "rde-tech" {
+			log.Println(c.headerIP, "receive", token)
+			h.broadcast <- []byte("broadcast-ping")
+		} else {
+			log.Println(c.headerIP, "receive error message", token)
+			break
+		}
 	}
 }
 
@@ -57,6 +73,7 @@ func (c *connection) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
+		h.unregister <- c
 		c.ws.Close()
 	}()
 	for {
@@ -67,6 +84,12 @@ func (c *connection) writePump() {
 				return
 			}
 			if err := c.write(websocket.TextMessage, message); err != nil {
+				token := string(message)
+				if token == "pong" {
+					log.Println(c.headerIP, "send pong")
+				} else if token == "broadcast-ping" {
+					log.Println(c.headerIP, "send broadcast-ping")
+				}
 				return
 			}
 		case <-ticker.C: //心跳封包
@@ -89,8 +112,8 @@ func serverHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	log.Println(ws.RemoteAddr().String(), "Connect Scuess")
-	c := &connection{send: make(chan []byte, 256), ws: ws}
+	log.Println(r.Header.Get("x-Real-IP"), "Connect Scuess")
+	c := &connection{send: make(chan []byte, 256), ws: ws, headerIP: r.Header.Get("X-Real-IP")}
 	h.register <- c
 	go c.writePump()
 	c.readPump()
