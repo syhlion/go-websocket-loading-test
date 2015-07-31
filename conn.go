@@ -37,7 +37,7 @@ func messagelog(b []byte) {
 //從堆疊出把訊息pump
 func (c *connection) readPump() {
 	defer func() {
-		log.Println(c.uid, c.headerIP, "disconnect")
+		log.Println(c.uid, c.headerIP, "disconnect", makeTimestamp())
 		h.unregister <- c
 		c.ws.Close()
 	}()
@@ -51,15 +51,15 @@ func (c *connection) readPump() {
 		}
 		token := strings.Split(string(message), ":")
 		if token[0] == "ping" {
-			log.Println(c.uid, c.headerIP, "receive", token)
-			c.send <- []byte("pong:in:" + strconv.FormatInt(makeTimestamp(), 10))
+			log.Println(c.uid, c.headerIP, "receive", token, makeTimestamp())
+			c.send <- []byte("pong:in:" + makeTimestamp())
 		} else if token[0] == "broadcast-pong" {
-			log.Println(c.headerIP, "recieve", token)
+			log.Println(c.headerIP, "recieve", token, makeTimestamp())
 		} else if token[0] == "rde-tech" {
-			log.Println(c.uid, c.headerIP, "receive", token)
+			log.Println(c.uid, c.headerIP, "receive", token, makeTimestamp())
 			h.broadcast <- []byte("broadcast-ping")
 		} else {
-			log.Println(c.uid, c.headerIP, "receive error message", token)
+			log.Println(c.uid, c.headerIP, "receive error message", token, makeTimestamp)
 			break
 		}
 	}
@@ -89,11 +89,11 @@ func (c *connection) writePump() {
 
 			token := strings.Split(string(message), ":")
 			if token[0] == "pong" {
-				log.Println(c.uid, c.headerIP, "send pong")
+				log.Println(c.uid, c.headerIP, "send pong", makeTimestamp())
 			} else if token[0] == "broadcast-ping" {
-				log.Println(c.uid, c.headerIP, "send broadcast-ping")
+				log.Println(c.uid, c.headerIP, "send broadcast-ping", makeTimestamp())
 			}
-			message = []byte(string(message) + ":out:" + strconv.FormatInt(makeTimestamp(), 10))
+			message = []byte(string(message) + ":out:" + makeTimestamp())
 			if err := c.write(websocket.TextMessage, message); err != nil {
 				return
 			}
@@ -105,15 +105,15 @@ func (c *connection) writePump() {
 		}
 	}
 }
-func makeTimestamp() int64 {
-	return time.Now().UnixNano() / int64(time.Millisecond)
+func makeTimestamp() string {
+	return strconv.FormatInt(time.Now().UnixNano()/int64(time.Millisecond), 10)
 }
 
 //serverHandler
 func serverHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		http.Error(w, "Method not allowed", 405)
-		log.Println(r.RemoteAddr, "Metho no allowed", r.Header)
+		log.Println(r.RemoteAddr, "Metho no allowed", r.Header, makeTimestamp())
 		return
 	}
 	ws, err := upgrader.Upgrade(w, r, nil)
@@ -121,7 +121,7 @@ func serverHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	log.Println(r.FormValue("key"), r.Header.Get("x-Real-IP"), "Connect Scuess")
+	log.Println(r.FormValue("key"), r.Header.Get("x-Real-IP"), "Connect Scuess", makeTimestamp())
 	c := &connection{send: make(chan []byte, 256), ws: ws, headerIP: r.Header.Get("X-Real-IP"), uid: r.FormValue("key")}
 	h.register <- c
 	go c.writePump()
