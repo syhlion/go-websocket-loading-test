@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 )
 
 var addr = flag.String("addr", ":8001", "ws address")
@@ -17,6 +18,7 @@ func main() {
 	if err == nil {
 		log.SetOutput(f)
 	}
+	log.SetPrefix(strconv.FormatInt(makeTimestamp(), 10) + ":")
 
 	go h.run()
 	http.HandleFunc("/", serverHandler)
