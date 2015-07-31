@@ -54,7 +54,7 @@ func (c *connection) readPump() {
 			log.Println(c.uid, c.headerIP, "receive", token, makeTimestamp())
 			c.send <- []byte("pong:in:" + makeTimestamp())
 		} else if token[0] == "broadcast-pong" {
-			log.Println(c.headerIP, "recieve", token, makeTimestamp())
+			log.Println(c.uid, c.headerIP, "recieve", token, makeTimestamp())
 		} else if token[0] == "rde-tech" {
 			log.Println(c.uid, c.headerIP, "receive", token, makeTimestamp())
 			h.broadcast <- []byte("broadcast-ping")
